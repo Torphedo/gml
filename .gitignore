@@ -1,0 +1,20 @@
+# CLion
+.idea/
+
+# Visual Studio
+.vs/
+CMakeSettings.json
+Debug/
+Release/
+
+# CMake Build Output
+out/
+
+# Hash files generated during the build
+*.md5
+*.sha512
+
+# Misc. Binaries
+*.exe
+*.dll
+*.pdb
