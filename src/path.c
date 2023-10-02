@@ -1,15 +1,21 @@
-#include <stdint.h>
 #include <string.h>
-#include <sys/stat.h>
 
-#include <shlobj.h>
+// Reduce the size of Windows.h to improve compile time
+#define WIN32_LEAN_AND_MEAN
+#define NOCOMM
+#define NOCLIPBOARD
+#define NODRAWTEXT
+#define NOMB
+#include <windows.h>
 
 #include "path.h"
-#include "logging.h"
+
+// Generic path utilities to manipulate and do checks on inputted C strings.
+// See path.h
 
 bool path_has_extension(const char* path, const char* extension) {
-    uint32_t pos = strlen(path);
-    uint16_t ext_length = strlen(extension);
+    uint32_t pos = strnlen(path, MAX_PATH);
+    uint16_t ext_length = strnlen(extension, MAX_PATH);
 
     // File extension is longer than input string.
     if (ext_length > pos) {
@@ -19,12 +25,19 @@ bool path_has_extension(const char* path, const char* extension) {
 }
 
 void path_get_filename(const char* path, char* output) {
-    int32_t pos = strlen(path);
+    int64_t pos = strnlen(path, MAX_PATH);
     // We need to check if it's over -1 so that if there are no backslashes,
     // pos = -1 and it just copies the whole string.
     while(path[pos] != '\\' && path[pos] != '/' && pos > -1) {
         pos--;
     }
-    strcpy(output, &path[pos] + 1);
+    strncpy(output, &path[pos] + 1, MAX_PATH);
+}
+
+void path_truncate(char* path, uint16_t pos) {
+    path[--pos] = 0; // Removes last character to take care of trailing "\\" or "/".
+    while(path[pos] != '\\' && path[pos] != '/') {
+        path[pos--] = 0;
+    }
 }
 
