@@ -10,10 +10,11 @@ add_executable(gml
   "src/self_inject.c"
   "src/path.c"
   "src/console.c"
+  "src/logging.c"
   "src/hooks.c"
 )
 
 add_subdirectory("ext/minhook")
-target_link_libraries(gml "-s" "minhook")
+target_link_libraries(gml "-s" minhook)
 target_include_directories(gml PRIVATE "ext/minhook/include")
 

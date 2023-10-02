@@ -27,12 +27,18 @@ DWORD __stdcall bootstrap(void* module_handle) {
         return EXIT_FAILURE;
     }
 
+    /*
     IMAGE_DOS_HEADER* dos_header = (IMAGE_DOS_HEADER*)module_handle;
     IMAGE_NT_HEADERS* nt_header = (IMAGE_NT_HEADERS*)((uintptr_t)module_handle + dos_header->e_lfanew);
     exe_entry_proc entry_point = (exe_entry_proc)((uintptr_t)module_handle + nt_header->OptionalHeader.AddressOfEntryPoint);
+    */
 
-    console_setup(32000);
+    console_setup();
     LOG_MSG(info, "Console enabled\n");
+
+    char base_path[MAX_PATH] = {0};
+    GetModuleFileNameA(NULL, base_path, sizeof(base_path));
+    LOG_MSG(debug, "Base module: %s\n", base_path);
 
     hook_io();
 
@@ -40,11 +46,6 @@ DWORD __stdcall bootstrap(void* module_handle) {
 }
 
 int main(int argc, char** argv) {
-    if (GetModuleHandleA("gml.exe") == NULL) {
-        LOG_MSG(info, "entry point called.\n");
-        return 0;
-    }
-
     char* target_name = argv[1];
     char* shell_cmd = argv[2];
     enable_ansi_codes();
