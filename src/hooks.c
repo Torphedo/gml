@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdint.h>
 // Reduce the size of Windows.h to improve compile time
 #define WIN32_LEAN_AND_MEAN
 #define NOCOMM
@@ -5,7 +7,6 @@
 #define NODRAWTEXT
 #define NOMB
 #include <windows.h>
-#include <stdio.h>
 
 #include <MinHook.h>
 
@@ -33,23 +34,39 @@ HANDLE WINAPI hook_CreateFileW (LPCWSTR lpFileName, DWORD access, DWORD share_mo
     return original_CreateFileW(L"C:\\storage\\dev\\git\\gml\\redirect.txt", access, share_mode, security_info, creation_flags, file_attributes, template_file);
 }
 
+bool do_api_hook(const wchar_t* dll, const char* func, void* hook, void** original) {
+    void* original_addr = NULL;
+    uint32_t result = 0;
+    result = MH_CreateHookApiEx(dll, func, func, original, &original_addr);
+    if (result != MH_OK) {
+        LOG_MSG(error, "Failed to place hook for %ls::%s()\n", dll, func);
+        return false;
+    }
+    if (MH_EnableHook(original_addr) != MH_OK) {
+        LOG_MSG(error, "Failed to enable hook for %ls::%s()\n", dll, func);
+        return false;
+    }
+    LOG_MSG(info, "Hooked %ls::%s()\n", dll, func);
+    return true;
+}
+
 bool hook_io() {
     if (MH_Initialize() != MH_OK) {
         LOG_MSG(error, "Failed to initialize MinHook\n");
         return false;
     }
 
-  	LOG_MSG(info, "Creating file hooks...\n");
-    MH_CreateHookApi(L"msvcrt.dll", "fopen", &hook_fopen, (void**)&original_fopen);
-  	LOG_MSG(info, "fopen() hooked\n");
-    MH_CreateHookApi(L"KERNEL32.dll", "CreateFileA", &hook_CreateFileA, (void**)&original_CreateFileA);
-    MH_CreateHookApi(L"KERNEL32.dll", "CreateFileW", &hook_CreateFileW, (void**)&original_CreateFileW);
-	LOG_MSG(info, "Created file hooks\n");
+    uint32_t hook_count = 0;
+    hook_count += do_api_hook(L"msvcrt.dll", "fopen", &hook_fopen, (void**)&original_fopen);
+    hook_count += do_api_hook(L"KERNEL32.dll", "CreateFileA", &hook_CreateFileA, (void**)&original_CreateFileA);
+    hook_count += do_api_hook(L"KERNEL32.dll", "CreateFileW", &hook_CreateFileW, (void**)&original_CreateFileW);
 
-    if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) {
-        LOG_MSG(error, "Failed to enable all hooks\n");
+    if (hook_count < 3) {
+        LOG_MSG(error, "Couldn't apply all hooks.\n");
         return false;
     }
+
+    LOG_MSG(info, "Done.\n");
 
     return true;
 }
